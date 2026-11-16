@@ -75,6 +75,34 @@ input.type.wrong{border-color:var(--bad);background:#fee2e2}
 .wi b{font-size:16px}.wi small{color:var(--sub);font-size:13px;display:block}
 .dots{letter-spacing:2px;color:var(--pri);font-size:12px;white-space:nowrap}
 .muted{color:var(--sub);font-size:14px;line-height:1.5}
+.sheet{position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
+.sheet.on{display:block}
+.sheet .in{max-width:480px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 18px calc(40px + env(safe-area-inset-bottom))}
+.emo{font-size:72px;text-align:center;line-height:1.1;margin:6px 0 4px}
+.dw{font-size:32px;font-weight:800;text-align:center;word-break:keep-all}
+.dpos{text-align:center;color:var(--sub);font-size:13px;margin:6px 0 2px}
+.dko{text-align:center;font-size:20px;font-weight:700;margin:6px 0 16px}
+.box{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
+.box h4{font-size:13px;color:var(--pri2);margin-bottom:8px}
+.box p{font-size:16px;line-height:1.6}
+.exi{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.exi:first-of-type{border-top:none;padding-top:0}
+.exi .t{flex:1;font-size:16px;line-height:1.5}
+.exi .t small{display:block;color:var(--sub);font-size:14px}
+.exi.hide{display:none}
+.mini{font:inherit;font-size:14px;font-weight:700;border:none;background:#e0f2fe;color:var(--pri2);border-radius:99px;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.moreEx{margin-top:10px;width:100%}
+textarea.mk{font:inherit;font-size:17px;width:100%;min-height:80px;padding:12px;border-radius:12px;border:2px solid var(--line);outline:none;resize:vertical;background:#fff}
+textarea.mk:focus{border-color:var(--pri)}
+.mkmsg{font-size:14px;margin:8px 0;line-height:1.5}
+.mine{font-size:15px;padding:8px 0;border-top:1px dashed var(--line);line-height:1.5}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:10px;border-radius:14px;margin-bottom:12px}
+.tiles.ans{background:#fff;border:2px dashed var(--line)}
+.tile{font:inherit;font-size:17px;font-weight:600;padding:9px 12px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 2px 0 var(--line)}
+.tiles.ans .tile{border-color:var(--pri)}
+.fbrow{display:flex;gap:10px}
+.fbrow .btn{flex:1}
+.fb .btn.ghost{background:#fff!important;color:var(--ink)!important;box-shadow:0 4px 0 var(--line)!important;flex:0 0 auto;width:auto;padding:17px 18px}
 </style>
 </head>
 <body>
@@ -158,8 +186,9 @@ input.type.wrong{border-color:var(--bad);background:#fee2e2}
 
 <div class="fb" id="fb"><div class="in">
   <h3 id="fbH"></h3><p id="fbS"></p><p class="k" id="fbK"></p>
-  <button class="btn" id="fbNext">계속</button>
+  <div class="fbrow"><button class="btn ghost" id="fbMore">📖 자세히</button><button class="btn" id="fbNext">계속</button></div>
 </div></div>
+<div class="sheet" id="detail"><div class="in" id="dIn"></div></div>
 
 <script>
 // ===== WORD BANK =====  w, pos, ko, s(sentence containing w), sk, lv(1-5), c(gen/av)
@@ -291,11 +320,134 @@ const W=[
 ["Hang in there","ex","조금만 버텨, 힘내","Finals are almost over. Hang in there.","기말 거의 끝났어. 조금만 버텨.",5,"ex"],
 ["Long story short","ex","간단히 말하면","Long story short, I missed the flight.","간단히 말하면, 비행기 놓쳤어.",5,"ex"]
 ].map((a,i)=>({id:i,w:a[0],pos:a[1],ko:a[2],s:a[3],sk:a[4],lv:a[5],c:a[6]}));
+// word: [emoji, 자세한 설명, [[예문, 해석], [예문, 해석]]]
+const EXTRA={
+"decide":["🤔","여러 선택지 중에서 하나로 마음을 정하는 것. decide to + 동사 = ~하기로 결정하다.",[["We decided to stay home.","우리는 집에 있기로 했다."],["It's hard to decide between these two.","이 둘 중에 고르기 어렵다."]]],
+"borrow":["🤲","남의 물건을 잠깐 가져다 쓰고 돌려주는 것. 반대로 '빌려주다'는 lend. borrow from = ~에게서 빌리다.",[["I borrowed a book from the library.","도서관에서 책을 빌렸다."],["Can I borrow your charger for a minute?","충전기 잠깐 빌려도 돼?"]]],
+"arrive":["🛬","어딘가에 도착하는 것. 큰 장소(도시, 나라)는 arrive in, 작은 장소(공항, 역)는 arrive at.",[["We arrived in Seattle at night.","우리는 밤에 시애틀에 도착했다."],["The package arrived this morning.","택배가 오늘 아침에 왔다."]]],
+"expensive":["💸","값이 비싼. 반대말은 cheap. 회화에서는 pricey도 많이 써요.",[["Living in Seattle is expensive.","시애틀에서 사는 건 비싸다."],["Flight training is really expensive.","비행 훈련은 정말 비싸다."]]],
+"quiet":["🤫","소리가 거의 없는, 조용한. 사람에게 쓰면 '말수가 적은'. quite(꽤)와 철자 헷갈리지 않기!",[["Please be quiet in the library.","도서관에서는 조용히 해 주세요."],["She is quiet but very smart.","그녀는 말수는 적지만 아주 똑똑하다."]]],
+"hungry":["🍔","배가 고픈. starving은 '배고파 죽겠다'는 과장 표현.",[["Are you hungry? I can make ramen.","배고파? 라면 끓여 줄 수 있어."],["I skipped lunch, so I'm really hungry.","점심을 걸러서 진짜 배고파."]]],
+"forget":["😵‍💫","기억하던 것을 잊어버리는 것. forget to + 동사 = (해야 할 일을) 깜빡하다.",[["I forgot to call my mom.","엄마한테 전화하는 걸 깜빡했다."],["I'll never forget my first flight.","첫 비행은 절대 못 잊을 거야."]]],
+"early":["⏰","정해진 시간이나 보통보다 일찍. 형용사로도 써요: an early flight(이른 비행편). 반대말 late.",[["I have an early flight tomorrow.","내일 아침 일찍 비행기 타."],["Let's leave early to avoid traffic.","차 막히기 전에 일찍 나가자."]]],
+"explain":["🧑‍🏫","모르는 사람이 이해할 수 있게 풀어서 말하는 것. explain A to B (B에게 A를 설명하다). explain me 라고는 안 해요!",[["Can you explain it to me again?","다시 설명해 줄래?"],["The instructor explained the checklist step by step.","교관이 체크리스트를 단계별로 설명했다."]]],
+"weather":["⛅","그날그날의 날씨. 셀 수 없는 명사라서 a weather 라고 안 해요. whether(~인지)와 발음이 같아요.",[["The weather in Seattle changes a lot.","시애틀 날씨는 자주 바뀐다."],["We canceled the flight because of bad weather.","날씨가 나빠서 비행을 취소했다."]]],
+"improve":["📈","더 좋아지게 하다, 또는 좋아지다. 실력, 상황, 성적 등에 자주 써요.",[["My listening has improved a lot.","내 듣기 실력이 많이 늘었다."],["How can I improve my landings?","착륙 실력을 어떻게 늘릴 수 있을까?"]]],
+"prepare":["🎒","미리 준비하다. prepare for + 명사 = ~에 대비하다.",[["She prepared dinner for the family.","그녀는 가족을 위해 저녁을 준비했다."],["Pilots prepare a flight plan before they fly.","조종사는 비행 전에 비행 계획을 준비한다."]]],
+"available":["🟢","사람에게 쓰면 '시간이 되는', 물건에 쓰면 '구할 수 있는, 이용 가능한'.",[["Is this seat available?","이 자리 비었어요?"],["The new version is available now.","새 버전이 이제 나왔어요."]]],
+"schedule":["📅","언제 무엇을 할지 정해 둔 일정. 동사로 '일정을 잡다'라는 뜻도 있어요. on schedule = 예정대로.",[["Let's schedule a meeting for Monday.","월요일로 회의 잡자."],["The flight is on schedule.","비행편이 예정대로 운항 중이다."]]],
+"recommend":["👍","좋다고 남에게 권하다. recommend + 명사, 또는 recommend that + 주어 + 동사.",[["I recommend this app to everyone.","이 앱을 모두에게 추천해."],["The doctor recommended that I get more sleep.","의사가 잠을 더 자라고 권했다."]]],
+"complain":["😤","불만을 말하다. complain about + 불만 대상. 명사는 complaint.",[["Customers complained about the long wait.","손님들이 오래 기다린 것에 불평했다."],["Stop complaining and start studying.","불평 그만하고 공부 시작해."]]],
+"convenient":["🏪","쓰기 편하고 시간이나 노력이 덜 드는. 약속 시간을 물을 때도 써요.",[["The store is in a convenient location.","그 가게는 위치가 편리하다."],["Is Friday convenient for you?","금요일 괜찮으세요?"]]],
+"mention":["💬","길게 말하지 않고 짧게 언급하다. mention about 이 아니라 그냥 mention + 대상.",[["He mentioned that he was moving.","그가 이사 간다고 말했다."],["Don't mention it.","별말씀을요. (고맙다는 말에 대한 대답)"]]],
+"nervous":["😬","긴장되고 불안한. 시험, 발표, 첫 비행 전 같은 상황. '신경질적인'이라는 뜻은 아니에요.",[["I was nervous on my first solo flight.","첫 단독 비행 때 긴장했다."],["Don't be nervous. You'll do great.","긴장하지 마. 잘할 거야."]]],
+"suddenly":["⚡","예고 없이 갑자기. 형용사는 sudden.",[["The engine suddenly stopped.","엔진이 갑자기 멈췄다."],["Suddenly, it started to rain.","갑자기 비가 오기 시작했다."]]],
+"reluctant":["🙅","하기 싫어서 망설이는. 완전히 거부하는 게 아니라 '마지못해' 느낌. reluctant to + 동사.",[["She was reluctant to leave her cats.","그녀는 고양이들을 두고 떠나기 싫어했다."],["Many students are reluctant to speak in class.","많은 학생들이 수업 중에 말하는 걸 꺼린다."]]],
+"thorough":["🔍","빠뜨리는 것 없이 처음부터 끝까지 꼼꼼한. through(통과해서), though(~이지만)와 헷갈리기 쉬워요.",[["We need a thorough plan.","우리는 철저한 계획이 필요하다."],["His research was very thorough.","그의 조사는 아주 철저했다."]]],
+"anticipate":["🔮","앞으로 일어날 일을 미리 예상하고 대비하다. expect보다 '미리 준비한다'는 느낌이 강해요.",[["We anticipate delays because of the snow.","눈 때문에 지연을 예상한다."],["A good pilot anticipates the next step.","좋은 조종사는 다음 단계를 미리 생각한다."]]],
+"deteriorate":["📉","점점 나빠지다. 날씨, 건강, 관계, 품질 등에 써요. improve의 반대.",[["The weather deteriorated during the flight.","비행 중에 날씨가 나빠졌다."],["Old roads deteriorate quickly.","오래된 도로는 빨리 망가진다."]]],
+"mitigate":["🛡️","나쁜 것(위험, 피해, 영향)을 완전히 없애지는 못해도 줄이다. 안전, 뉴스, 논문에서 자주 나와요.",[["We can mitigate the risk with good training.","좋은 훈련으로 위험을 줄일 수 있다."],["The company took steps to mitigate the damage.","회사는 피해를 줄이기 위한 조치를 했다."]]],
+"efficient":["⚙️","시간, 돈, 에너지를 낭비 없이 잘 쓰는. efficient = 낭비가 없음, effective = 결과가 좋음.",[["This car is fuel efficient.","이 차는 연비가 좋다."],["She is an efficient worker.","그녀는 일을 효율적으로 한다."]]],
+"assume":["🤷","확인하지 않고 그럴 거라고 생각하다. 증거 없이 짐작하는 느낌.",[["I assumed the class was online.","수업이 온라인일 거라고 생각했다."],["Never assume the runway is clear.","활주로가 비어 있을 거라고 절대 넘겨짚지 마라."]]],
+"consistent":["🔁","늘 같은 방식으로 꾸준한, 들쭉날쭉하지 않은.",[["Consistent practice is the key.","꾸준한 연습이 핵심이다."],["His grades are very consistent.","그의 성적은 아주 일정하다."]]],
+"eventually":["🏁","시간이 걸렸지만 결국에는. '혹시라도'라는 뜻이 아니에요.",[["Eventually, he became a pilot.","결국 그는 조종사가 되었다."],["You will eventually get used to it.","결국엔 익숙해질 거야."]]],
+"procrastinate":["🛋️","해야 할 일을 자꾸 뒤로 미루다. 숏츠 보면서 과제 미루는 바로 그것!",[["Stop procrastinating and start your essay.","그만 미루고 에세이 시작해."],["I procrastinated all week, so now I'm stressed.","일주일 내내 미뤄서 지금 스트레스 받아."]]],
+"ambiguous":["🌫️","뜻이 두 가지 이상으로 해석될 수 있어서 애매한. 반대말 clear.",[["His answer was ambiguous.","그의 대답은 애매했다."],["Avoid ambiguous words when you talk to ATC.","관제와 교신할 땐 애매한 말을 피해라."]]],
+"inevitable":["🌊","어떻게 해도 막을 수 없는, 반드시 일어나는.",[["Change is inevitable.","변화는 피할 수 없다."],["Delays were inevitable in the storm.","폭풍 속에서 지연은 불가피했다."]]],
+"meticulous":["🧵","아주 작은 부분까지 신경 쓰는. thorough보다 더 세밀한 느낌.",[["He keeps meticulous notes.","그는 아주 꼼꼼하게 노트를 쓴다."],["Mechanics must be meticulous.","정비사는 세심해야 한다."]]],
+"undermine":["🕳️","아래를 파서 무너뜨리듯 무언가를 서서히 약하게 만들다. 자신감, 신뢰, 노력 등에 써요.",[["Rumors can undermine trust.","소문은 신뢰를 무너뜨릴 수 있다."],["Don't let one mistake undermine your confidence.","실수 하나로 자신감을 잃지 마."]]],
+"elaborate":["🗣️","동사로는 '더 자세히 설명하다'. elaborate on + 주제. 형용사로는 '정교한'.",[["Can you elaborate a little more?","조금 더 자세히 말해 줄래요?"],["She elaborated on her plan.","그녀는 계획을 자세히 설명했다."]]],
+"plausible":["🧩","진짜일 수도 있겠다 싶은, 그럴듯한. 사실이라는 확신은 없어요.",[["His excuse sounded plausible.","그의 변명은 그럴듯하게 들렸다."],["Is there a more plausible reason?","더 그럴듯한 이유가 있을까?"]]],
+"compelling":["🧲","끌어당기듯 설득력 있거나 흥미로운. 이야기, 증거, 이유에 자주 써요.",[["The movie has a compelling story.","그 영화는 이야기가 흡입력 있다."],["There is compelling evidence for this.","이에 대한 설득력 있는 증거가 있다."]]],
+"substantial":["🏋️","양이나 크기가 꽤 큰, 무시할 수 없는.",[["She received a substantial scholarship.","그녀는 상당한 장학금을 받았다."],["We made substantial progress.","우리는 상당한 진전을 이뤘다."]]],
+"deliberately":["🎯","실수가 아니라 일부러, 의도적으로. '신중하게 천천히'라는 뜻도 있어요.",[["She deliberately left early.","그녀는 일부러 일찍 나갔다."],["He spoke slowly and deliberately.","그는 천천히 신중하게 말했다."]]],
+"scrutinize":["🔬","아주 자세히 뜯어보며 검사하다. look at보다 훨씬 강한 느낌.",[["The teacher scrutinized my essay.","선생님이 내 에세이를 꼼꼼히 살폈다."],["Pilots scrutinize the weather before a long flight.","조종사는 장거리 비행 전 날씨를 꼼꼼히 살핀다."]]],
+"ubiquitous":["🌐","어디를 가도 있는, 아주 흔한. everywhere의 고급 표현.",[["Coffee shops are ubiquitous in Seattle.","시애틀엔 커피숍이 어디에나 있다."],["Short videos are ubiquitous on social media.","짧은 영상은 SNS 어디에나 있다."]]],
+"exacerbate":["🔥","이미 나쁜 상황을 더 나쁘게 만들다. make worse의 고급 표현.",[["Lack of sleep exacerbates stress.","수면 부족은 스트레스를 악화시킨다."],["The rain exacerbated the traffic.","비가 교통 체증을 더 심하게 했다."]]],
+"pragmatic":["🔧","이상보다 현실적으로 실제 되는 방법을 고르는.",[["She is a pragmatic leader.","그녀는 현실적인 리더다."],["Let's take a pragmatic approach.","현실적인 방법으로 가자."]]],
+"alleviate":["🩹","고통, 걱정, 문제를 덜어 주다, 가볍게 하다.",[["Exercise can alleviate stress.","운동은 스트레스를 덜어 줄 수 있다."],["The new road will alleviate traffic.","새 도로가 교통 체증을 줄여 줄 것이다."]]],
+"candid":["🗨️","숨김없이 솔직한. honest와 비슷하지만 '불편한 것도 털어놓는' 느낌.",[["Can I be candid with you?","솔직하게 말해도 될까?"],["He gave a candid interview.","그는 솔직한 인터뷰를 했다."]]],
+"complacent":["😴","지금 잘하고 있다고 생각해서 방심하고 노력하지 않는. 항공 안전에서 큰 위험 요소로 자주 나와요.",[["Experienced pilots can become complacent.","경험 많은 조종사도 방심할 수 있다."],["We won, but we can't get complacent.","이겼지만 방심하면 안 된다."]]],
+"diligent":["🐜","꾸준히 열심히, 성실하게 하는.",[["He is diligent about his homework.","그는 숙제를 성실히 한다."],["Diligent study pays off.","성실한 공부는 보상을 받는다."]]],
+"tentative":["✏️","아직 확정되지 않은, 바뀔 수 있는. 연필로 적어 둔 계획 느낌.",[["Our tentative date is June 5.","잠정 날짜는 6월 5일이다."],["She gave a tentative smile.","그녀는 조심스럽게 웃었다."]]],
+"nonetheless":["↪️","앞에서 말한 것에도 불구하고. however와 비슷하지만 더 격식 있는 느낌.",[["The test was hard. Nonetheless, I passed.","시험은 어려웠다. 그래도 통과했다."],["It's expensive, but it's worth it nonetheless.","비싸지만 그래도 그만한 가치가 있다."]]],
+"circumvent":["🔀","규칙이나 문제를 정면으로 해결하지 않고 돌아서 피하다. 보통 부정적인 느낌.",[["He tried to circumvent the security check.","그는 보안 검사를 피해 가려고 했다."],["We found a way to circumvent the problem.","우리는 그 문제를 우회할 방법을 찾았다."]]],
+"runway":["🛣️","비행기가 이륙하고 착륙하는 긴 포장 도로. 번호는 자기 방위 ÷ 10 (27 = 270°).",[["The runway is wet after the rain.","비가 온 뒤라 활주로가 젖어 있다."],["Runway 34 is closed today.","34번 활주로는 오늘 폐쇄됐다."]]],
+"altitude":["🏔️","보통 평균 해수면(MSL) 기준 높이. 지면 기준 높이는 height 또는 AGL.",[["We are cruising at 35,000 feet.","우리는 35,000피트에서 순항 중이다."],["Check your altitude.","고도를 확인해라."]]],
+"takeoff":["🛫","명사: 이륙. 동사로 쓸 때는 두 단어로 take off.",[["We will take off in five minutes.","5분 후에 이륙합니다."],["Takeoff is a busy part of the flight.","이륙은 비행에서 바쁜 순간이다."]]],
+"cockpit":["🧑‍✈️","조종사가 앉아서 비행기를 조종하는 공간. flight deck이라고도 해요.",[["Only pilots are allowed in the cockpit.","조종실엔 조종사만 들어갈 수 있다."],["The cockpit has many instruments.","조종석엔 계기가 많다."]]],
+"fuel":["⛽","비행기를 움직이는 연료. 소형기는 avgas, 제트기는 jet fuel. 동사로 '연료를 넣다'도 돼요.",[["We need to fuel the plane.","비행기에 연료를 넣어야 한다."],["Never take off with low fuel.","연료가 부족한 상태로 절대 이륙하지 마라."]]],
+"passenger":["🧳","비행기, 차 등에 타고 있는 승객 (조종사, 승무원 제외).",[["The flight had 180 passengers.","그 비행편엔 승객 180명이 탔다."],["Brief your passengers before the flight.","비행 전에 승객에게 안내해라."]]],
+"taxi":["🚕","비행기가 자기 힘으로 지상에서 이동하는 것. 택시와 철자가 같아요.",[["We taxied to the gate after landing.","착륙 후 게이트로 이동했다."],["Taxi slowly on wet surfaces.","젖은 노면에서는 천천히 이동해라."]]],
+"clearance":["✅","관제(ATC)가 주는 허가. takeoff clearance, landing clearance, IFR clearance 등.",[["Read back your clearance.","허가를 복창해라."],["We are waiting for our IFR clearance.","IFR 허가를 기다리는 중이다."]]],
+"heading":["🧭","비행기 기수가 가리키는 방향(도). 실제로 가는 경로(track)와는 바람 때문에 다를 수 있어요.",[["Turn right heading 090.","우선회, 방위 090."],["Maintain your heading.","기수 방향을 유지해라."]]],
+"visibility":["👀","앞을 얼마나 멀리 볼 수 있는지. 미국은 statute miles(SM)로 표시해요.",[["Fog reduced the visibility.","안개 때문에 시정이 줄었다."],["VFR flight needs good visibility.","시계 비행에는 좋은 시정이 필요하다."]]],
+"tower":["🗼","공항 주변 이착륙을 관리하는 관제탑. 무선에서 '공항 이름 + Tower'로 불러요.",[["Boeing Tower, N123AB, ready for departure.","보잉 타워, N123AB 이륙 준비 완료."],["The tower cleared us to land.","관제탑이 착륙을 허가했다."]]],
+"descend":["⬇️","고도를 낮추다. 반대말 climb. 명사는 descent.",[["We will descend shortly.","곧 하강합니다."],["Start your descent now.","지금 하강을 시작해라."]]],
+"turbulence":["🌪️","공기 흐름이 불규칙해서 비행기가 흔들리는 것. 셀 수 없는 명사예요.",[["Please fasten your seatbelt due to turbulence.","난기류로 인해 안전벨트를 매 주세요."],["We hit some light turbulence.","약한 난기류를 만났다."]]],
+"maintain":["📏","현재 상태(고도, 속도, 방향)를 그대로 유지하다. ATC 지시에서 정말 자주 나와요.",[["Maintain 2,000 until established.","진입할 때까지 2,000을 유지하라."],["Maintain a safe speed.","안전한 속도를 유지해라."]]],
+"crosswind":["↔️","활주로 방향과 옆으로 엇갈려 부는 바람. 착륙을 어렵게 만들어요.",[["The crosswind was 15 knots.","측풍이 15노트였다."],["We practiced crosswind landings today.","오늘 측풍 착륙을 연습했다."]]],
+"inspection":["🔧","문제가 없는지 자세히 살펴보는 점검. 비행 전 점검은 preflight inspection.",[["The annual inspection is due next month.","연간 점검이 다음 달이다."],["The inspection found a small crack.","점검에서 작은 균열이 발견됐다."]]],
+"divert":["↪️","원래 목적지가 아닌 다른 곳으로 방향을 바꾸다. 날씨나 비상 상황 때.",[["The flight diverted because of fog.","안개 때문에 다른 공항으로 회항했다."],["We may divert to Portland.","포틀랜드로 회항할 수도 있다."]]],
+"readback":["🔁","관제 지시를 조종사가 그대로 다시 말하는 것. 실수를 막기 위해 필수예요.",[["Your readback is correct.","복창이 맞습니다."],["Always read back hold short instructions.","Hold short 지시는 항상 복창해라."]]],
+"ceiling":["☁️","가장 낮은 BKN(broken) 또는 OVC(overcast) 구름층의 높이. 일반적인 뜻은 '천장'.",[["The ceiling is too low for VFR.","운고가 시계 비행 하기엔 너무 낮다."],["Ceilings will rise in the afternoon.","오후엔 운고가 높아질 것이다."]]],
+"deviation":["↗️","원래 경로나 고도에서 벗어나는 것. 날씨를 피할 때 요청해요.",[["Deviation approved, return to course when able.","이탈 승인, 가능할 때 원래 경로로 복귀하라."],["Report any deviation from your clearance.","허가와 다르게 비행하면 보고해라."]]],
+"fatigue":["🥱","쌓인 피로. tired보다 심각하고 판단력을 떨어뜨리는 상태. 항공 안전 핵심 용어예요.",[["Fatigue slows your reaction time.","피로는 반응 속도를 늦춘다."],["Don't fly if you feel fatigue.","피로를 느끼면 비행하지 마라."]]],
+"squawk":["📟","트랜스폰더에 4자리 코드를 넣다. ATC가 'Squawk 4521'처럼 지시해요.",[["Squawk 1200 for VFR.","VFR은 1200을 설정해라."],["Squawk ident.","식별 버튼을 눌러라."]]],
+"precipitation":["🌧️","비, 눈, 진눈깨비처럼 하늘에서 떨어지는 모든 것.",[["Heavy precipitation is expected tonight.","오늘 밤 많은 강수가 예상된다."],["Precipitation can reduce visibility.","강수는 시정을 낮출 수 있다."]]],
+"approach":["🛬","착륙하려고 활주로로 다가가는 비행 단계. 동사로는 '다가가다'.",[["We are on final approach.","최종 접근 중이다."],["Request the visual approach.","시계 접근을 요청한다."]]],
+"airworthy":["🛠️","항공기가 규정에 맞고 안전하게 비행할 수 있는 상태인. 확인 책임은 기장(PIC)에게 있어요.",[["Is the aircraft airworthy?","그 항공기는 감항성이 있나?"],["A broken light can make the plane unairworthy.","고장 난 등 하나로도 감항성을 잃을 수 있다."]]],
+"icing":["🧊","비행 중 날개나 기체에 얼음이 붙는 것. 양력이 줄고 무게가 늘어서 매우 위험해요.",[["We climbed to get out of icing.","착빙을 벗어나려고 상승했다."],["Watch for carburetor icing.","기화기 결빙을 조심해라."]]],
+"expedite":["⏩","평소보다 빠르게 하다. ATC가 '서둘러 달라'고 할 때 써요.",[["Expedite taxi across the runway.","활주로를 빠르게 건너가라."],["Can you expedite your descent?","하강을 서둘러 줄 수 있나?"]]],
+"vectors":["📡","관제사가 레이더를 보고 주는 방향(heading) 지시들.",[["Fly heading 180, vectors to the ILS.","방위 180으로 비행, ILS로 유도한다."],["We received vectors around the storm.","폭풍을 피하도록 유도를 받았다."]]],
+"stall":["📉","날개의 받음각이 너무 커져서 양력을 잃는 상태. 엔진이 꺼지는 게 아니에요!",[["The stall warning horn went off.","실속 경고음이 울렸다."],["Lower the nose to recover from a stall.","기수를 낮춰서 실속에서 회복해라."]]],
+"incapacitation":["🚑","조종사가 갑자기 몸이 안 좋아져서 비행기를 조종할 수 없게 되는 상태.",[["The first officer took control after the captain's incapacitation.","기장이 조종 불능이 되자 부기장이 조종을 넘겨받았다."],["Crews train for pilot incapacitation.","승무원은 조종사 무능력화 상황을 훈련한다."]]],
+"No worries":["😌","상대가 사과하거나 고마워할 때 '괜찮아'라고 가볍게 하는 말. No problem과 비슷해요.",[["Thanks for your help! No worries.","도와줘서 고마워! 별거 아냐."],["I forgot your book. No worries, bring it tomorrow.","책 깜빡했어. 괜찮아, 내일 가져와."]]],
+"I'm running late":["🏃","약속에 늦을 것 같을 때 미리 알리는 표현. 문자로 많이 보내요.",[["I'm running late for class.","수업에 늦을 것 같아."],["The bus is slow. I'm running late.","버스가 느려. 나 늦을 듯."]]],
+"Fair enough":["🤝","상대 말이 이해되거나 일리 있을 때 '그럴 만하네, 인정'.",[["I want to rest today. Fair enough.","오늘은 쉬고 싶어. 그럴 만하지."],["Fair enough, you can choose next time.","인정, 다음엔 네가 골라."]]],
+"Sounds good":["👌","제안에 동의할 때 '좋아'. 문자에서 정말 자주 써요.",[["Let's meet at the library. Sounds good.","도서관에서 만나자. 좋아."],["Sounds good to me.","난 좋아."]]],
+"Never mind":["🙃","방금 한 말을 취소하거나 '신경 쓰지 마' 할 때.",[["What did you say? Never mind, it's not important.","뭐라고? 됐어, 중요한 거 아냐."],["Never mind, I'll do it myself.","됐어, 내가 할게."]]],
+"I'm good":["🙅‍♂️","뭔가 권할 때 '난 괜찮아(필요 없어)'라고 정중하게 거절하는 말. 안부 대답으로도 써요.",[["Do you need a bag? I'm good, thanks.","봉투 필요하세요? 괜찮아요."],["How are you? I'm good.","어떻게 지내? 잘 지내."]]],
+"It slipped my mind":["💭","기억에서 미끄러져 나갔다 = 깜빡했다. I forgot보다 부드러워요.",[["Your birthday totally slipped my mind.","네 생일 완전 깜빡했어."],["Sorry, it slipped my mind to reply.","미안, 답장하는 걸 깜빡했어."]]],
+"I'm on the fence":["🤸","울타리 위에 앉아서 어느 쪽으로도 안 내려간 상태 = 아직 결정 못 함.",[["I'm on the fence about buying it.","그거 살지 고민 중이야."],["I'm on the fence about the new job.","새 일자리 할지 고민 중이야."]]],
+"Let me get back to you":["📞","지금 답을 못 줄 때 '확인하고 다시 연락할게'.",[["Let me get back to you after I check my schedule.","일정 확인하고 다시 연락할게."],["Can I get back to you on that?","그건 나중에 답해 줘도 될까?"]]],
+"I'll pass":["✋","권유를 가볍게 거절할 때 '난 됐어'.",[["Another game? I'll pass, I'm tired.","한 판 더? 난 됐어, 피곤해."],["Thanks, but I'll pass this time.","고마운데 이번엔 패스할게."]]],
+"That makes sense":["💡","설명을 듣고 이해가 될 때. 대화에서 정말 자주 써요.",[["Oh, that makes sense. Thanks!","아, 이해됐어. 고마워!"],["Does that make sense?","이해돼? (설명한 뒤 확인할 때)"]]],
+"What do you mean":["❓","상대 말이 이해 안 될 때 '무슨 말이야?'. 말투에 따라 따지는 느낌이 날 수 있어요.",[["What do you mean, it's canceled?","취소됐다니 무슨 말이야?"],["Sorry, what do you mean exactly?","죄송한데 정확히 무슨 뜻이에요?"]]],
+"I'm swamped":["🌊","늪(swamp)에 빠진 것처럼 할 일에 파묻혔다 = 엄청 바쁨.",[["I'm swamped with work this week.","이번 주 일 때문에 정신없어."],["Sorry for the late reply. I'm swamped.","답장 늦어서 미안. 너무 바빠."]]],
+"Can you walk me through it":["🚶","옆에서 같이 걸어가듯 처음부터 하나씩 설명해 달라는 부탁.",[["Can you walk me through the checklist?","체크리스트 하나씩 설명해 줄래?"],["Let me walk you through it.","내가 하나씩 알려 줄게."]]],
+"It's not a big deal":["🤏","별일 아니니 걱정 말라는 말. 큰일이면 It's a big deal.",[["I lost my pen. It's not a big deal.","펜 잃어버렸어. 별거 아냐."],["Missing one class is not a big deal.","수업 한 번 빠진 건 별일 아냐."]]],
+"I'm down":["🙌","같이 하자는 제안에 '나 콜!'. 친구끼리 쓰는 캐주얼한 말이에요.",[["Pizza tonight? I'm down.","오늘 밤 피자? 콜."],["Are you down for a movie?","영화 볼래?"]]],
+"Let's play it by ear":["🎵","악보 없이 귀로 듣고 연주하듯, 미리 정하지 말고 상황 봐서 하자.",[["We'll play it by ear on Saturday.","토요일은 상황 봐서 하자."],["It might rain. Let's play it by ear.","비 올 수도 있어. 그때 봐서 하자."]]],
+"Could you do me a favor":["🙏","부탁하기 전에 '부탁 하나 해도 될까?' 하고 공손하게 여는 말.",[["Could you do me a favor and feed my cats?","부탁인데 내 고양이 밥 좀 줄래?"],["Can you do me a favor?","부탁 하나 해도 돼?"]]],
+"I didn't catch that":["👂","소리를 잘 못 들었을 때 공손하게. Pardon? 이나 Sorry? 도 비슷해요.",[["Sorry, I didn't catch your name.","죄송한데 이름을 못 들었어요."],["I didn't catch that last part.","마지막 부분을 못 들었어요."]]],
+"Take your time":["🐢","서두르지 말라고 배려하는 말.",[["Take your time, there's no rush.","천천히 해, 급할 거 없어."],["Take your time with the test.","시험 천천히 풀어."]]],
+"I'll keep that in mind":["🧠","조언을 듣고 '기억해 둘게'. 공손하고 자연스러운 대답이에요.",[["Good advice. I'll keep that in mind.","좋은 조언이야. 기억해 둘게."],["Keep in mind that the store closes at 9.","가게가 9시에 닫는다는 거 기억해."]]],
+"It's up to you":["🎲","결정을 상대에게 넘길 때 '너 편한 대로'.",[["We can go now or later. It's up to you.","지금 가도 되고 나중에 가도 돼. 너 편한 대로."],["It's up to you to decide.","결정은 너한테 달렸어."]]],
+"I'm not a big fan of":["😕","~를 별로 안 좋아해. I hate보다 훨씬 부드럽고 예의 있는 표현.",[["I'm not a big fan of horror movies.","나 공포 영화 별로 안 좋아해."],["I'm not a big fan of early mornings.","아침 일찍 일어나는 거 별로야."]]],
+"That's a good point":["☝️","상대 의견이 일리 있을 때. 토론이나 수업에서 자주 써요.",[["That's a good point, I'll change it.","좋은 지적이야, 바꿀게."],["You make a good point.","좋은 지적이네요."]]],
+"Just to clarify":["🔎","오해 없게 확인하고 싶을 때 문장 앞에 붙여요. 수업이나 일할 때 유용해요.",[["Just to clarify, do we need to print it?","확인차 여쭤보는데, 출력해야 하나요?"],["Just to clarify, the meeting is at 3?","확실히 하자면, 회의 3시 맞지?"]]],
+"I'm looking forward to it":["😊","기대된다. to 뒤에는 명사나 -ing가 와요: looking forward to seeing you.",[["See you Friday! I'm looking forward to it.","금요일에 봐! 기대된다."],["I'm looking forward to flying again.","다시 비행하는 게 기대돼."]]],
+"Don't get me wrong":["⚠️","비판처럼 들릴 말을 하기 전에 '오해는 하지 마'로 부드럽게 시작하는 말.",[["Don't get me wrong, I love my job, but I'm tired.","오해하지 마, 내 일 좋아하는데 피곤해."],["Don't get me wrong, it's a good idea.","오해 마, 좋은 생각이야."]]],
+"I'll take a rain check":["🌧️","비 때문에 경기가 취소되면 받던 '다음 입장권'에서 온 말 = 이번엔 못 하지만 다음에 하자.",[["Can I take a rain check on lunch?","점심은 다음에 해도 될까?"],["I'm busy tonight. I'll take a rain check.","오늘 밤은 바빠. 다음에 하자."]]],
+"Let's call it a day":["🌇","오늘 일이나 공부를 여기서 끝내자.",[["We've done enough. Let's call it a day.","충분히 했어. 오늘은 여기까지."],["I'm going to call it a day.","난 오늘 여기까지 할게."]]],
+"It's on me":["💳","내가 계산할게. This one's on me 도 많이 써요.",[["Lunch is on me today.","오늘 점심은 내가 쏠게."],["Don't worry, this one's on me.","걱정 마, 이건 내가 낼게."]]],
+"I couldn't agree more":["💯","더 이상 동의할 수 없을 만큼 = 완전 동의해. not 때문에 반대 뜻으로 오해하기 쉬워요!",[["Sleep is important. I couldn't agree more.","잠은 중요해. 완전 동의."],["I couldn't agree more with you.","너한테 완전 동의해."]]],
+"rings a bell":["🔔","머릿속에서 종이 울리듯 어디서 들어본 것 같다.",[["Does the name Kim ring a bell?","김이라는 이름 들어본 적 있어?"],["That song rings a bell.","그 노래 어디서 들어본 것 같아."]]],
+"I'm all ears":["👂","온몸이 귀가 될 만큼 집중해서 듣고 있다 = 말해 봐.",[["You have news? I'm all ears.","소식 있어? 말해 봐."],["Got a better idea? I'm all ears.","더 좋은 생각 있어? 들어볼게."]]],
+"Hang in there":["💪","힘든 사람에게 '조금만 버텨, 힘내'.",[["I know it's hard. Hang in there.","힘든 거 알아. 조금만 버텨."],["Hang in there, the weekend is coming.","힘내, 주말 온다."]]],
+"Long story short":["✂️","긴 이야기를 줄여서 결론만 말할 때.",[["Long story short, we got lost.","간단히 말하면, 우리 길 잃었어."],["Long story short, I passed the exam.","결론만 말하면, 시험 붙었어."]]]
+};
+
+W.forEach(w=>{const e=EXTRA[w.w]||["📘","",[]];w.e=e[0];w.x=e[1];w.m=e[2]});
+const POS={n:"명사",v:"동사",adj:"형용사",adv:"부사",ex:"회화 표현"};
+
 
 // ===== STORAGE =====
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const DAY=864e5, today=()=>new Date().toDateString();
 let S=LS.get("vf",null)||{level:0,cards:{},streak:0,lastDay:"",xpDay:"",xp:0,done:0,recent:[]};
+if(!S.mine)S.mine={};
 if(S.xpDay!==today()){S.xpDay=today();S.xp=0;S.done=0}
 const save=()=>LS.set("vf",S);
 const GOAL=30, INTV=[0,1,3,7,14,30];
@@ -353,11 +505,14 @@ function buildSession(m){
       words=words.concat(fresh.slice(0,10-words.length));
       if(words.length<10)words=words.concat(shuffle(W.filter(w=>inCourse(w)&&!words.includes(w))).slice(0,10-words.length));
     }
-    Q=shuffle(words).map(w=>{
-      if(m==="listen")return{w,type:"listen"};
+    Q=[];
+    shuffle(words).forEach(w=>{
+      if(m==="listen"){Q.push({w,type:"listen"});return}
       const b=card(w)?card(w).box:0;
-      const types=w.c==="ex"?(b===0?["meaning","reverse"]:["blank","reverse","listen"]):b===0?["meaning","blank"]:b<3?["blank","blank","listen","type"]:["type","listen","blank"];
-      return{w,type:types[Math.random()*types.length|0]};
+      if(!card(w))Q.push({w,type:"intro"});
+      const types=w.c==="ex"?(b===0?["meaning","reverse"]:b<3?["blank","reverse","listen","scramble"]:["reverse","scramble","make","listen"])
+        :b===0?["meaning","blank"]:b<3?["blank","listen","type","scramble"]:["type","scramble","make","listen"];
+      Q.push({w,type:types[Math.random()*types.length|0]});
     });
   }
   qi=0;combo=0;right=0;sessXP=0;
@@ -371,6 +526,36 @@ function renderQ(){
   $("combo").textContent=combo>=3?"🔥"+combo:"";
   const blankS=esc(w.s).replace(rx(w.w),'<span class="blank">?</span>');
   let h="";
+  if(type==="intro"){
+    $("qBody").innerHTML=`<div class="qtype">✨ 새 ${w.c==="ex"?"표현":"단어"}</div>${detailHTML(w,true)}<button class="btn pri" id="introGo" style="margin-top:6px">외웠어요, 문제 풀기 →</button>`;
+    $("introGo").onclick=()=>{qi++;qi<Q.length?renderQ():finish()};
+    speak(w.w);return;
+  }
+  if(type==="scramble"){
+    const toks=w.s.split(" ");let pool=shuffle(toks);if(toks.length>2)while(pool.join(" ")===w.s)pool=shuffle(toks);
+    let ans=[];
+    h=`<div class="qtype">🧩 순서대로 눌러서 문장 만들기</div><div class="qsub" style="font-size:18px;color:var(--ink)">${esc(w.sk)}</div><div class="tiles ans" id="tA"></div><div class="tiles" id="tP"></div><button class="btn pri" id="tgo" disabled>확인</button>`;
+    $("qBody").innerHTML=h;
+    const draw=()=>{
+      $("tA").innerHTML=ans.map((t,i)=>`<button class="tile" data-a="${i}">${esc(t)}</button>`).join("");
+      $("tP").innerHTML=pool.map((t,i)=>`<button class="tile" data-p="${i}">${esc(t)}</button>`).join("");
+      $("tgo").disabled=pool.length>0;
+      $("tA").querySelectorAll(".tile").forEach(b=>b.onclick=()=>{if($("tgo").dataset.done)return;pool.push(ans.splice(+b.dataset.a,1)[0]);draw()});
+      $("tP").querySelectorAll(".tile").forEach(b=>b.onclick=()=>{if($("tgo").dataset.done)return;ans.push(pool.splice(+b.dataset.p,1)[0]);draw()});
+    };
+    draw();
+    $("tgo").onclick=()=>{$("tgo").dataset.done=1;const ok=ans.join(" ")===w.s;$("tA").style.borderColor=ok?"var(--ok)":"var(--bad)";$("tA").style.background=ok?"#dcfce7":"#fee2e2";$("tgo").style.display="none";grade(ok)};
+    return;
+  }
+  if(type==="make"){
+    h=`<div class="qtype">✍️ 이 ${w.c==="ex"?"표현":"단어"}로 나만의 예문 만들기</div><div class="qword" style="margin-top:6px;${w.w.length>14?"font-size:26px":""}">${w.e} ${esc(w.w)}</div><div class="qsub" style="text-align:center">${esc(w.ko)}</div>
+    <div class="mkbox"><textarea class="mk" id="mkT" placeholder="예: ${esc(w.m[0]?w.m[0][0]:w.s)}" autocapitalize="sentences"></textarea><div class="mkmsg" id="mkM"></div></div>
+    <button class="btn pri" id="mkGo">확인</button><button class="btn sec" id="mkSkip" style="margin-top:10px">모르겠어요 (예문 보기)</button>`;
+    $("qBody").innerHTML=h;
+    $("mkGo").onclick=()=>{const r=checkMine(w,$("mkT").value);$("mkM").innerHTML=r.msg;$("mkM").style.color=r.ok?"var(--ok)":"var(--bad)";if(r.ok){addMine(w,$("mkT").value.trim());$("mkT").disabled=true;$("mkGo").style.display="none";$("mkSkip").style.display="none";grade(true)}};
+    $("mkSkip").onclick=()=>{$("mkGo").style.display="none";$("mkSkip").style.display="none";grade(false)};
+    return;
+  }
   if(type==="meaning"){
     h=`<div class="qtype">${mode==="test"?"레벨 테스트 · ":""}뜻 고르기</div><div class="qword" style="${w.w.length>14?"font-size:28px":""}">${esc(w.w)}</div><button class="spk" style="align-self:center" data-say="${esc(w.w)}">🔊 발음</button>`;
     const opts=shuffle([w.ko,...distractors(w,"ko")]);
@@ -421,7 +606,8 @@ function grade(ok){
   if(mode==="test"&&ok)right++;
   $("fb").className="fb show "+(ok?"ok":"no");
   $("fbH").textContent=ok?(combo>=3?`정답! 🔥 ${combo}연속`:"정답!"):"아쉬워요";
-  $("fbS").innerHTML=`<b>${esc(w.w)}</b> · ${esc(w.ko)}<br>${esc(w.s)}`;
+  $("fbS").innerHTML=`${w.e} <b>${esc(w.w)}</b> · ${esc(w.ko)}<br>${esc(w.s)}`;
+  $("fbMore").style.display=mode==="test"?"none":"";
   $("fbK").textContent=w.sk;
   if(mode!=="test")speak(w.s);
 }
@@ -433,6 +619,7 @@ function adjustLevel(){
   else if(acc<.5&&S.level>1){S.level--;S.recent=[]}
 }
 let toastLv="";
+$("fbMore").onclick=()=>openDetail(Q[qi].w);
 $("fbNext").onclick=()=>{
   $("fb").className="fb";
   qi++;
@@ -451,7 +638,7 @@ function finish(){
   }else{
     if(S.lastDay!==today()){S.streak=S.lastDay===new Date(Date.now()-DAY).toDateString()?S.streak+1:1;S.lastDay=today()}
     save();
-    const total=Q.length,pct=Math.round(right/total*100);
+    const total=Q.filter(q=>q.type!=="intro").length,pct=Math.round(right/total*100);
     $("rEmoji").textContent=pct>=90?"🏆":pct>=60?"🎉":"💪";
     $("rTitle").textContent=toastLv||"세트 완료!";toastLv="";
     $("rTxt").innerHTML=`정답 ${right} / ${total} (${pct}%)<br>+${sessXP} XP · 🔥 ${S.streak}일 연속<br>틀린 단어는 곧 복습에 다시 나와요.`;
@@ -474,7 +661,7 @@ function renderBook(){
   if(bf==="weak")list=list.filter(w=>card(w).box<=1);
   if(bf==="master")list=list.filter(w=>card(w).box>=4);
   list.sort((a,b)=>card(a).box-card(b).box);
-  $("wl").innerHTML=list.length?list.map(w=>{const c=card(w);return `<div class="wi" data-say="${esc(w.w)}"><div><b>${esc(w.w)}</b> <small>${esc(w.ko)} · ${{av:"항공",gen:"단어",ex:"회화"}[w.c]} Lv.${w.lv}</small></div><span class="dots">${"●".repeat(c.box)}${"○".repeat(5-c.box)}</span></div>`}).join(""):`<p class="muted" style="text-align:center;padding:40px 0">아직 단어가 없어요.</p>`;
+  $("wl").innerHTML=list.length?list.map(w=>{const c=card(w);return `<div class="wi" data-open="${w.id}"><span style="font-size:26px">${w.e}</span><div style="flex:1"><b>${esc(w.w)}</b> <small>${esc(w.ko)} · ${{av:"항공",gen:"단어",ex:"회화"}[w.c]} Lv.${w.lv}</small></div><span class="dots">${"●".repeat(c.box)}${"○".repeat(5-c.box)}</span></div>`}).join(""):`<p class="muted" style="text-align:center;padding:40px 0">아직 단어가 없어요.</p>`;
   show("book");
 }
 $("bBook").onclick=renderBook;$("bx").onclick=renderHome;
@@ -482,6 +669,51 @@ $("bookSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;bf=b.da
 
 document.addEventListener("click",e=>{const t=e.target.closest("[data-say]");if(t)speak(t.dataset.say)});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+// ===== DETAIL =====
+function exRow(en,ko,hide){return `<div class="exi${hide?" hide":""}"><div class="t">${esc(en)}<small>${esc(ko)}</small></div><button class="mini" data-say="${esc(en)}">🔊</button></div>`}
+function detailHTML(w,compact){
+  const exs=[[w.s,w.sk],...w.m];
+  const mine=(S.mine[w.id]||[]);
+  let h=`<div class="emo">${w.e}</div><div class="dw">${esc(w.w)} <button class="mini" data-say="${esc(w.w)}">🔊</button></div>
+  <div class="dpos">${POS[w.pos]||""} · ${{av:"항공",gen:"단어",ex:"회화"}[w.c]} Lv.${w.lv}</div><div class="dko">${esc(w.ko)}</div>`;
+  if(w.x)h+=`<div class="box"><h4>💡 쉽게 이해하기</h4><p>${esc(w.x)}</p></div>`;
+  h+=`<div class="box exbox"><h4>📝 예문</h4>${exs.map((e,i)=>exRow(e[0],e[1],i>0)).join("")}${exs.length>1?`<button class="mini moreEx">예문 더 보기 (+${exs.length-1})</button>`:""}</div>`;
+  if(!compact){
+    h+=`<div class="box mkbox" data-id="${w.id}"><h4>✍️ 나만의 예문 만들기</h4><textarea class="mk" placeholder="${esc(w.w)}를 넣어서 문장을 만들어 보세요" autocapitalize="sentences"></textarea><div class="mkmsg"></div><button class="btn pri mkSave" style="padding:13px">저장하기 (+5 XP)</button>
+    <div class="mineList">${mine.map(t=>`<div class="mine">✏️ ${esc(t)}</div>`).join("")}</div>
+    <p class="muted" style="font-size:12px;margin-top:8px">단어가 들어갔는지만 자동으로 확인해요. 문법은 위 예문과 비교해 보세요.</p></div>`;
+  }
+  return h;
+}
+function openDetail(w){
+  $("dIn").innerHTML=`<div class="qtop" style="margin-bottom:0"><button class="x" id="dx">✕</button></div>`+detailHTML(w,false);
+  $("detail").classList.add("on");$("detail").scrollTop=0;
+  $("dx").onclick=()=>$("detail").classList.remove("on");
+}
+function stem(x){x=x.toLowerCase();return x.length>4?x.replace(/(e|y|s)$/,""):x}
+function checkMine(w,t){
+  t=t.trim();const lo=t.toLowerCase();
+  if(t.split(/\s+/).length<3)return{ok:false,msg:"3단어 이상으로 문장을 만들어 보세요."};
+  const skip=["i'm","it's","let's","that's","don't","you","the","a","i","me","it","can","to"];
+  const keys=w.w.toLowerCase().split(" ").filter(k=>!skip.includes(k));
+  const has=(keys.length?keys:[w.w.toLowerCase()]).every(k=>lo.includes(stem(k)));
+  if(!has)return{ok:false,msg:`문장에 <b>${esc(w.w)}</b>가 들어가야 해요.`};
+  let tip="";
+  if(!/^[A-Z"']/.test(t))tip+=" 문장 첫 글자는 대문자로!";
+  if(!/[.!?"]$/.test(t))tip+=" 끝에 마침표(.)나 물음표(?)를 붙여요.";
+  return{ok:true,msg:"좋아요! 👏 저장했어요."+(tip?"<br><span style='color:var(--sub)'>💡"+tip+"</span>":"")};
+}
+function addMine(w,t){(S.mine[w.id]=S.mine[w.id]||[]).unshift(t);S.xp+=5;save()}
+document.addEventListener("click",e=>{
+  const m=e.target.closest(".moreEx");
+  if(m){const box=m.closest(".exbox");const nx=box.querySelector(".exi.hide");if(nx)nx.classList.remove("hide");const left=box.querySelectorAll(".exi.hide").length;if(!left)m.remove();else m.textContent=`예문 더 보기 (+${left})`;return}
+  const sv=e.target.closest(".mkSave");
+  if(sv){const box=sv.closest(".mkbox"),w=W[+box.dataset.id],ta=box.querySelector("textarea"),msg=box.querySelector(".mkmsg");
+    const r=checkMine(w,ta.value);msg.innerHTML=r.msg;msg.style.color=r.ok?"var(--ok)":"var(--bad)";
+    if(r.ok){addMine(w,ta.value.trim());box.querySelector(".mineList").insertAdjacentHTML("afterbegin",`<div class="mine">✏️ ${esc(ta.value.trim())}</div>`);ta.value=""}return}
+  const op=e.target.closest("[data-open]");
+  if(op){openDetail(W[+op.dataset.open]);return}
+});
 // ===== START =====
 if(!S.level)show("intro");else renderHome();
 </script>
