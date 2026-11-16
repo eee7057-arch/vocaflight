@@ -146,7 +146,7 @@ textarea.mk:focus{border-color:var(--pri)}
     <button class="btn sec" id="bListen">🎧 듣기 퀴즈</button>
     <button class="btn sec" id="bBook">📖 단어장</button>
   </div>
-  <p class="muted" style="margin-top:auto;padding-top:20px;text-align:center"><a href="#" id="bRetest" style="color:var(--sub)">레벨 테스트 다시 하기</a> · <a href="#" id="bBackup" style="color:var(--sub)">백업 / 복원</a></p>
+  <p class="muted" style="margin-top:auto;padding-top:20px;text-align:center"><a href="#" id="bRetest" style="color:var(--sub)">레벨 테스트 다시 하기</a> · <a href="#" id="bBackup" style="color:var(--sub)">백업 / 복원</a><br><span style="font-size:11px">버전 4 · 단어 715개</span></p>
 </section>
 
 <!-- QUIZ -->
@@ -716,7 +716,8 @@ $("selGo").onclick=()=>{const list=[...sel].map(id=>W[id]);if(list.length)buildS
 document.addEventListener("click",e=>{const t=e.target.closest("[data-star]");if(!t)return;const id=+t.dataset.star;if(S.star[id])delete S.star[id];else S.star[id]=1;save();document.querySelectorAll(`[data-star="${id}"]`).forEach(b=>b.textContent=S.star[id]?"⭐":"☆")});
 
 document.addEventListener("click",e=>{const t=e.target.closest("[data-say]");if(t)speak(t.dataset.say)});
-if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{r.update();document.addEventListener("visibilitychange",()=>{if(!document.hidden)r.update()})}).catch(()=>{});
+  let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(reloaded)return;reloaded=true;if(!document.querySelector(".screen.on")||document.querySelector(".screen.on").id!=="quiz")location.reload()})}
 // ===== DETAIL =====
 function exRow(en,ko,hide){return `<div class="exi${hide?" hide":""}"><div class="t">${esc(en)}<small>${esc(ko)}</small></div><button class="mini" data-say="${esc(en)}">🔊</button></div>`}
 function detailHTML(w,compact){
