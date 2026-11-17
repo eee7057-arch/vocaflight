@@ -101,6 +101,19 @@ textarea.mk:focus{border-color:var(--pri)}
 .tile{font:inherit;font-size:17px;font-weight:600;padding:9px 12px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 2px 0 var(--line)}
 .tiles.ans .tile{border-color:var(--pri)}
 .fbrow{display:flex;gap:10px}
+.rate{display:flex;gap:6px;margin:8px 0 6px}
+.rb{flex:1;font:inherit;font-size:13px;font-weight:700;padding:9px 4px;border-radius:10px;border:2px solid #0002;background:#fff;color:var(--ink);cursor:pointer}
+.rb.on{border-color:var(--ok);background:#bbf7d0}
+.nxt{font-size:14px;margin-bottom:12px;color:var(--ink)}
+.bub{background:#fff;border-radius:18px 18px 18px 4px;padding:14px 16px;font-size:20px;font-weight:600;line-height:1.5;box-shadow:0 1px 3px #0002;margin-bottom:14px;word-break:keep-all}
+.bub .blank{display:inline-block;min-width:70px;border-bottom:3px solid var(--pri);color:var(--pri);text-align:center}
+.hintb{font:inherit;font-size:14px;font-weight:700;border:none;background:#fef3c7;color:#92400e;border-radius:99px;padding:8px 14px;cursor:pointer;align-self:flex-start;margin-bottom:12px}
+.ybox{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 4px 12px #0ea5e933}
+.ybox b{font-size:17px}.ybox p{font-size:13px;opacity:.9;margin:4px 0 12px}
+.ybox button{font:inherit;font-weight:700;font-size:15px;border:none;border-radius:12px;padding:12px;width:100%;background:#fff;color:var(--pri2);cursor:pointer}
+.rlist{width:100%;text-align:left;background:var(--card);border-radius:14px;padding:10px 14px;margin-top:10px;max-height:38vh;overflow:auto}
+.rlist div{font-size:14px;padding:6px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.rlist div:first-child{border-top:none}
 .row2{display:flex;gap:10px}.row2 .btn{flex:1;font-size:15px;padding:14px 8px}
 .search{font:inherit;font-size:16px;width:100%;padding:12px 14px;border-radius:12px;border:2px solid var(--line);outline:none;margin-bottom:10px;background:#fff}
 .seg.sm button{font-size:12px;padding:8px 2px}
@@ -133,6 +146,7 @@ textarea.mk:focus{border-color:var(--pri)}
     <div class="row" style="justify-content:space-between"><b>오늘의 목표</b><span class="muted" id="goalTxt">0 / 30문제</span></div>
     <div class="bar"><i id="goalBar" style="width:0"></i></div>
   </div>
+  <div class="ybox" id="yBox" style="display:none"></div>
   <div class="seg" id="course">
     <button data-c="mix" class="on">섞기</button>
     <button data-c="av">✈️ 항공</button>
@@ -141,12 +155,13 @@ textarea.mk:focus{border-color:var(--pri)}
   </div>
   <div class="menu">
     <button class="btn pri" id="bLearn">학습 시작 (10문제)</button>
+    <button class="btn sec" id="bQuiz">📝 실력 퀴즈 (배운 것만)</button>
     <button class="btn sec" id="bReview">복습하기</button>
     <div class="row2"><button class="btn sec" id="bStar">⭐ 별표 복습</button><button class="btn sec" id="bWrong">❌ 틀린 것 복습</button></div>
     <button class="btn sec" id="bListen">🎧 듣기 퀴즈</button>
     <button class="btn sec" id="bBook">📖 단어장</button>
   </div>
-  <p class="muted" style="margin-top:auto;padding-top:20px;text-align:center"><a href="#" id="bRetest" style="color:var(--sub)">레벨 테스트 다시 하기</a> · <a href="#" id="bBackup" style="color:var(--sub)">백업 / 복원</a><br><span style="font-size:11px">버전 4 · 단어 715개</span></p>
+  <p class="muted" style="margin-top:auto;padding-top:20px;text-align:center"><a href="#" id="bRetest" style="color:var(--sub)">레벨 테스트 다시 하기</a> · <a href="#" id="bBackup" style="color:var(--sub)">백업 / 복원</a><br><span style="font-size:11px">버전 5 · 단어 715개</span></p>
 </section>
 
 <!-- QUIZ -->
@@ -196,7 +211,7 @@ textarea.mk:focus{border-color:var(--pri)}
 </div>
 
 <div class="fb" id="fb"><div class="in">
-  <h3 id="fbH"></h3><p id="fbS"></p><p class="k" id="fbK"></p>
+  <h3 id="fbH"></h3><p id="fbS"></p><p class="k" id="fbK"></p><div id="fbRate"></div>
   <div class="fbrow"><button class="btn ghost stb" id="fbStar" style="font-size:20px">☆</button><button class="btn ghost" id="fbMore">📖 자세히</button><button class="btn" id="fbNext">계속</button></div>
 </div></div>
 <div class="sheet" id="detail"><div class="in" id="dIn"></div></div>
@@ -464,6 +479,8 @@ const DAY=864e5, today=()=>new Date().toDateString();
 let S=LS.get("vf",null)||{level:0,cards:{},streak:0,lastDay:"",xpDay:"",xp:0,done:0,recent:[]};
 if(!S.mine)S.mine={};
 if(!S.star)S.star={};
+if(!S.log)S.log={};
+if(!S.yDone)S.yDone={};
 if(S.xpDay!==today()){S.xpDay=today();S.xp=0;S.done=0}
 const save=()=>LS.set("vf",S);
 const GOAL=30, INTV=[0,1,3,7,14,30];
@@ -488,6 +505,40 @@ function distractors(w,field,n=3){
 }
 const starList=()=>W.filter(w=>inCourse(w)&&S.star[w.id]);
 const wrongList=()=>W.filter(w=>inCourse(w)&&card(w)&&card(w).x>0&&card(w).box<4);
+// ===== 자동 복습 일정 (SM-2 방식: 정답 여부 + 걸린 시간 + 어려움 선택) =====
+const dayStart=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
+const dkey=t=>{const d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function sched(c,q){
+  if(c.ef==null){c.ef=2.5;c.reps=c.box||0;c.iv=INTV[c.box||0]}
+  // 같은 날 이미 맞힌 단어는 다시 맞혀도 간격을 더 늘리지 않음 (하루에 여러 번 풀어도 공정하게)
+  if(q>=3&&c.last&&c.iv>0&&dayStart(c.last)===dayStart(Date.now())){c.last=Date.now();return c}
+  if(q<3){c.reps=0;c.iv=0;c.ef=Math.max(1.3,c.ef-0.2);c.due=Date.now()+10*60e3}
+  else{
+    c.reps++;
+    let iv=c.reps===1?1:c.reps===2?(q===3?2:q===4?3:5):Math.round(Math.max(c.iv,1)*c.ef*(q===3?0.6:q===5?1.3:1));
+    c.iv=Math.max(1,Math.min(iv,180));
+    c.ef=Math.max(1.3,Math.min(3,c.ef+0.1-(5-q)*(0.08+(5-q)*0.02)));
+    c.due=dayStart(Date.now())+c.iv*DAY;
+  }
+  c.box=c.iv===0?0:c.iv<=1?1:c.iv<=3?2:c.iv<=7?3:c.iv<=21?4:5;
+  c.last=Date.now();
+  return c;
+}
+function nextLabel(c){
+  if(!c)return "";
+  const d=Math.round((dayStart(c.due)-dayStart(Date.now()))/DAY);
+  if(d<=0)return c.due>Date.now()?"오늘 조금 뒤 다시":"지금 복습할 차례";
+  if(d===1)return "내일";
+  const dt=new Date(c.due),md=`${dt.getMonth()+1}/${dt.getDate()}`;
+  const lab=d%7===0&&d<=28?`${d/7}주 뒤`:d>28&&d<=56?`약 ${Math.round(d/7)}주 뒤`:d>56?`약 ${Math.round(d/30)}달 뒤`:`${d}일 뒤`;
+  return `${lab} (${md})`;
+}
+function logDay(id){const k=dkey(Date.now());const a=S.log[k]=S.log[k]||[];if(!a.includes(id))a.push(id);const ks=Object.keys(S.log).sort();while(ks.length>14)delete S.log[ks.shift()]}
+function prevLogKey(){const k=dkey(Date.now());return Object.keys(S.log).filter(x=>x<k&&S.log[x].length).sort().pop()}
+const learned=()=>W.filter(w=>card(w));
+function quizPick(n=10){
+  return W.filter(w=>inCourse(w)&&card(w)).map(w=>{const c=card(w);return{w,s:(c.x||0)*2-(c.box||0)+(c.due<=Date.now()?3:0)+(c.ef?(2.5-c.ef)*3:0)+Math.random()*3}}).sort((a,b)=>b.s-a.s).slice(0,n).map(o=>o.w);
+}
 const dueList=()=>W.filter(w=>inCourse(w)&&card(w)&&card(w).due<=Date.now());
 
 // ===== HOME =====
@@ -499,26 +550,42 @@ function renderHome(){
   $("goalTxt").textContent=Math.min(S.done,GOAL)+" / "+GOAL+"문제"+(S.done>=GOAL?" ✅":"");
   $("goalBar").style.width=Math.min(100,S.done/GOAL*100)+"%";
   const d=dueList().length;
-  $("bReview").textContent=d?`복습하기 (${d}개 대기 중)`:"복습하기 (지금은 없음)";
+  $("bReview").textContent=d?`📅 오늘 복습하기 (${d}개)`:"📅 오늘 복습 완료 ✅";
   $("bReview").disabled=!d;
   const ns=starList().length,nw=wrongList().length;
   $("bStar").textContent=`⭐ 별표 복습 (${ns})`;$("bStar").disabled=!ns;
   $("bWrong").textContent=`❌ 틀린 것 복습 (${nw})`;$("bWrong").disabled=!nw;
+  const nl=W.filter(w=>inCourse(w)&&card(w)).length;
+  $("bQuiz").textContent=nl>=4?`📝 실력 퀴즈 (배운 ${nl}개 중에서)`:"📝 실력 퀴즈 (단어 4개 이상 배우면 열려요)";$("bQuiz").disabled=nl<4;
+  const yk=prevLogKey(),yb=$("yBox");
+  if(yk){
+    const n=S.log[yk].length,isY=yk===dkey(Date.now()-DAY),[,mm,dd]=yk.split("-");
+    const lab=isY?"어제":`지난 학습일(${+mm}/${+dd})`;
+    yb.style.display="";
+    yb.innerHTML=`<b>📆 ${lab} 배운 ${n}개, 기억나요?</b><p>${S.yDone[yk]?"✅ 이미 풀었어요. 한 번 더 해도 좋아요.":"퀴즈로 확인하면 기억에 훨씬 오래 남아요."}</p><button id="yGo">${S.yDone[yk]?"다시 풀기":"퀴즈 시작"} (${Math.min(n,20)}문제)</button>`;
+    $("yGo").onclick=()=>buildSession("quiz",S.log[yk].map(i=>W[i]).filter(Boolean),{yday:yk});
+  }else yb.style.display="none";
   show("home");
 }
 $("course").onclick=e=>{const b=e.target.closest("button");if(!b)return;course=b.dataset.c;$("course").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));renderHome()};
 
 // ===== SESSION =====
 let Q=[],qi=0,combo=0,right=0,mode="learn",sessXP=0;
-let lastCustom=[];
-function buildSession(m,list){
-  mode=m;let words=[];
+let lastCustom=[],sessTag={},sessIds=new Set(),qStart=0,pending=null;
+const QZ=["ctx","trans","k2e","dict","sit"];
+function pickQT(w){
+  const sitOK=w.x&&!w.x.toLowerCase().includes(w.w.toLowerCase());
+  const t=w.c==="ex"?["ctx","ctx","trans","k2e"].concat(sitOK?["sit","sit"]:[]):["ctx","ctx","trans","k2e","dict"];
+  return t[Math.random()*t.length|0];
+}
+function buildSession(m,list,tag){
+  mode=m;sessTag=tag||{};sessIds=new Set();pending=null;let words=[];
   if(m==="test"){
     for(let lv=1;lv<=5;lv++)words.push(...shuffle(W.filter(w=>w.lv===lv&&w.c==="gen")).slice(0,2));
     Q=words.map(w=>({w,type:"meaning"}));
   }else{
     const due=shuffle(dueList());
-    if(m==="custom"){lastCustom=list;words=shuffle(list).slice(0,20)}
+    if(m==="custom"||m==="quiz"){lastCustom=list;words=shuffle(list).slice(0,m==="quiz"&&!sessTag.yday?10:20)}
     else if(m==="review")words=due.slice(0,10);
     else{
       words=due.slice(0,5);
@@ -531,10 +598,11 @@ function buildSession(m,list){
     Q=[];
     shuffle(words).forEach(w=>{
       if(m==="listen"){Q.push({w,type:"listen"});return}
+      if(m==="quiz"){Q.push({w,type:pickQT(w)});return}
       const b=card(w)?card(w).box:0;
       if(!card(w))Q.push({w,type:"intro"});
-      const types=w.c==="ex"?(b===0?["meaning","reverse"]:b<3?["blank","reverse","listen","scramble"]:["reverse","scramble","make","listen"])
-        :b===0?["meaning","blank"]:b<3?["blank","listen","type","scramble"]:["type","scramble","make","listen"];
+      const types=w.c==="ex"?(b===0?["meaning","reverse"]:b<3?["ctx","sit","trans","listen","scramble"]:["k2e","ctx","make","scramble"])
+        :b===0?["meaning","blank"]:b<3?["ctx","trans","dict","scramble","blank"]:["k2e","dict","make","scramble"];
       Q.push({w,type:types[Math.random()*types.length|0]});
     });
   }
@@ -544,7 +612,8 @@ function buildSession(m,list){
 }
 
 function renderQ(){
-  const {w,type}=Q[qi];
+  const {w,type}=Q[qi];qStart=Date.now();
+  if(QZ.includes(type)){renderQuizQ();return}
   $("qBar").style.width=(qi/Q.length*100)+"%";
   $("combo").textContent=combo>=3?"🔥"+combo:"";
   const blankS=esc(w.s).replace(rx(w.w),'<span class="blank">?</span>');
@@ -606,20 +675,91 @@ function renderQ(){
     grade(ok);
   });
   if(type==="type"){
-    const go=()=>{const i=$("tin");if(i.disabled)return;const ok=i.value.trim().toLowerCase()===w.w.toLowerCase();i.disabled=true;i.classList.add(ok?"right":"wrong");$("tgo").style.display="none";grade(ok)};
+    const go=()=>{const i=$("tin");if(i.disabled)return;const ok=norm(i.value)===norm(w.w);i.disabled=true;i.classList.add(ok?"right":"wrong");$("tgo").style.display="none";grade(ok)};
     $("tgo").onclick=go;$("tin").onkeydown=e=>{if(e.key==="Enter")go()};
     setTimeout(()=>$("tin").focus(),50);
   }
 }
 
+function autoQ(ok,type){
+  if(!ok)return 1;
+  const t=(Date.now()-qStart)/1000,typing=["type","k2e","dict","scramble","make"].includes(type);
+  const [f,sl]=typing?[10,25]:[4,10];
+  let q=t<f?5:t>sl?3:4;if(Q[qi].hint)q=Math.min(q,3);
+  return q;
+}
+function drawRate(){
+  const p=pending;if(!p){$("fbRate").innerHTML="";return}
+  const prev=sched(Object.assign({},card(p.w)),p.q);
+  $("fbRate").innerHTML=(p.ok?`<div class="rate">${[[3,"😓 어려웠어"],[4,"🙂 보통"],[5,"😎 쉬웠어"]].map(([q,l])=>`<button class="rb${p.q===q?" on":""}" data-q="${q}">${l}</button>`).join("")}</div>`:"")+`<div class="nxt">📅 다음 복습: <b>${nextLabel(prev)}</b>${p.ok?` <span style="color:var(--sub);font-size:12px">(걸린 시간 ${Math.round((p.t||0))}초)</span>`:""}</div>`;
+  $("fbRate").querySelectorAll(".rb").forEach(b=>b.onclick=()=>{pending.q=+b.dataset.q;drawRate()});
+}
+function commit(){if(!pending)return;const c=card(pending.w);if(c)S.cards[pending.w.id]=sched(c,pending.q);pending=null;save()}
+const norm=t=>String(t).toLowerCase().replace(/[’‘`]/g,"'").replace(/[^a-z0-9' -]/g," ").replace(/\s+/g," ").trim();
+function exsWith(w){const all=[[w.s,w.sk],...(w.m||[])];const ok=all.filter(e=>rx(w.w).test(e[0]));return ok.length?ok:[[w.s,w.sk]]}
+function pickEx(w){const e=exsWith(w),alt=e.filter(x=>x[0]!==w.s),p=alt.length?alt:e;return p[Math.random()*p.length|0]}
+function dis2(w,n=3){
+  const same=x=>x.id!==w.id&&x.c===w.c&&(w.c==="ex"||x.pos===w.pos);
+  let p=shuffle(learned().filter(same)).concat(shuffle(W.filter(x=>same(x)&&Math.abs(x.lv-w.lv)<=1)),shuffle(W.filter(same)));
+  const seen=new Set([w.w.toLowerCase()]),out=[];
+  for(const x of p){const k=x.w.toLowerCase();if(!seen.has(k)){seen.add(k);out.push(x.w)}if(out.length===n)break}
+  return out;
+}
+function transDis(w,ko,n=3){
+  const p=shuffle(learned().filter(x=>x.id!==w.id&&x.c===w.c)).concat(shuffle(W.filter(x=>x.id!==w.id&&x.c===w.c)));
+  const seen=new Set([ko]),out=[];
+  for(const x of p){const e=[[x.s,x.sk],...(x.m||[])];const k=e[Math.random()*e.length|0][1];if(!seen.has(k)){seen.add(k);out.push(k)}if(out.length===n)break}
+  return out;
+}
+function renderQuizQ(){
+  const q=Q[qi],{w,type}=q;
+  if(!q.ex)q.ex=pickEx(w);
+  const [en,ko]=q.ex,blanked=esc(en).replace(rx(w.w),'<span class="blank">?</span>');
+  let h="",ans=w.w,opts=null,typing=false;
+  if(type==="ctx"){
+    h=`<div class="qtype">${w.c==="ex"?"💬 대화 완성: 빈칸에 들어갈 말은?":"📝 새 문장: 빈칸에 알맞은 말은?"}</div><div class="bub">${blanked}</div>`;
+    opts=shuffle([w.w,...dis2(w)]);
+  }else if(type==="sit"){
+    h=`<div class="qtype">🎭 이런 상황, 영어로 뭐라고 할까?</div><div class="bub" style="font-size:17px">${esc(w.x)}</div>`;
+    opts=shuffle([w.w,...dis2(w)]);
+  }else if(type==="trans"){
+    ans=ko;
+    h=`<div class="qtype">🔍 이 문장의 알맞은 해석은?</div><div class="bub">${esc(en)}</div><button class="spk" data-say="${esc(en)}">🔊 듣기</button>`;
+    opts=shuffle([ko,...transDis(w,ko)]);
+  }else if(type==="k2e"){
+    typing=true;
+    h=`<div class="qtype">✍️ 한국어를 보고 빈칸을 영어로 쓰기</div><div class="qmain" style="font-size:20px">${esc(ko)}</div><div class="bub">${blanked}</div>`;
+  }else{ // dict
+    typing=true;
+    h=`<div class="qtype">🎧 듣고 빈칸 받아쓰기</div><button class="spk" id="play">🔊 다시 듣기</button><div class="bub">${blanked}</div>`;
+  }
+  if(opts)h+=`<div class="opts">${opts.map(o=>`<button class="opt" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div>`;
+  if(typing)h+=`<button class="hintb" id="hint">💡 힌트 보기</button><div class="qsub" id="hintT" style="display:none"></div><input class="type" id="tin" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="영어로 입력"><button class="btn pri" id="tgo">확인</button>`;
+  $("qBody").innerHTML=h;
+  if(type==="dict"){$("play").onclick=()=>speak(en);speak(en)}
+  $("qBody").querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    const ok=b.dataset.v===ans;
+    $("qBody").querySelectorAll(".opt").forEach(x=>{x.disabled=true;if(x.dataset.v===ans)x.classList.add("right")});
+    if(!ok)b.classList.add("wrong");
+    grade(ok);
+  });
+  if(typing){
+    $("hint").onclick=()=>{q.hint=1;$("hint").style.display="none";const t=$("hintT");t.style.display="";t.innerHTML=`<b>${esc(w.w[0])}</b> `+w.w.slice(1).replace(/[a-zA-Z]/g,"_ ")+` · 뜻: ${esc(w.ko)}`};
+    const go=()=>{const i=$("tin");if(i.disabled)return;const ok=norm(i.value)===norm(w.w);i.disabled=true;i.classList.add(ok?"right":"wrong");$("tgo").style.display="none";$("hint").style.display="none";grade(ok)};
+    $("tgo").onclick=go;$("tin").onkeydown=e=>{if(e.key==="Enter")go()};
+    setTimeout(()=>$("tin").focus(),50);
+  }
+}
 function grade(ok){
-  const {w}=Q[qi];
+  const {w,type}=Q[qi];
   if(mode==="test"){S.recent.push({lv:w.lv,ok});}
   else{
     let c=card(w)||{box:0,due:0,r:0,x:0};
-    if(ok){c.box=Math.min(5,c.box+1);c.r++;c.due=Date.now()+INTV[c.box]*DAY}
-    else{c.box=0;c.x++;c.due=Date.now();if(!Q.slice(qi+1).some(q=>q.w===w))Q.push({w,type:"meaning"})}
+    if(ok)c.r++;
+    else{c.x++;if(!Q.slice(qi+1).some(q=>q.w===w))Q.push({w,type:mode==="quiz"?pickQT(w):"meaning"})}
     S.cards[w.id]=c;
+    pending={w,ok,q:autoQ(ok,type),t:(Date.now()-qStart)/1000};
+    logDay(w.id);sessIds.add(w.id);
     if(ok){combo++;right++;const g=10+(combo>=3?5:0);S.xp+=g;sessXP+=g}else combo=0;
     S.done++;
     S.recent.push({lv:w.lv,ok});S.recent=S.recent.slice(-20);
@@ -629,11 +769,13 @@ function grade(ok){
   if(mode==="test"&&ok)right++;
   $("fb").className="fb show "+(ok?"ok":"no");
   $("fbH").textContent=ok?(combo>=3?`정답! 🔥 ${combo}연속`:"정답!"):"아쉬워요";
-  $("fbS").innerHTML=`${w.e} <b>${esc(w.w)}</b> · ${esc(w.ko)}<br>${esc(w.s)}`;
+  const exq=Q[qi].ex||[w.s,w.sk];
+  $("fbS").innerHTML=`${w.e} <b>${esc(w.w)}</b> · ${esc(w.ko)}<br>${esc(exq[0])}`;
   $("fbMore").style.display=mode==="test"?"none":"";
   $("fbStar").style.display=mode==="test"?"none":"";$("fbStar").dataset.star=w.id;$("fbStar").textContent=S.star[w.id]?"⭐":"☆";
-  $("fbK").textContent=w.sk;
-  if(mode!=="test")speak(w.s);
+  $("fbK").textContent=exq[1];
+  drawRate();
+  if(mode!=="test")speak(exq[0]);
 }
 function adjustLevel(){
   const r=S.recent.filter(x=>x.lv>=(S.level||1));
@@ -645,6 +787,7 @@ function adjustLevel(){
 let toastLv="";
 $("fbMore").onclick=()=>openDetail(Q[qi].w);
 $("fbNext").onclick=()=>{
+  commit();
   $("fb").className="fb";
   qi++;
   if(qi<Q.length){renderQ();return}
@@ -665,15 +808,19 @@ function finish(){
     const total=Q.filter(q=>q.type!=="intro").length,pct=Math.round(right/total*100);
     $("rEmoji").textContent=pct>=90?"🏆":pct>=60?"🎉":"💪";
     $("rTitle").textContent=toastLv||"세트 완료!";toastLv="";
-    $("rTxt").innerHTML=`정답 ${right} / ${total} (${pct}%)<br>+${sessXP} XP · 🔥 ${S.streak}일 연속<br>틀린 단어는 곧 복습에 다시 나와요.`;
+    if(sessTag.yday){S.yDone[sessTag.yday]=1;save()}
+    const rl=[...sessIds].map(i=>W[i]).filter(w=>card(w)).sort((a,b)=>card(a).due-card(b).due).slice(0,30);
+    $("rTxt").innerHTML=`정답 ${right} / ${total} (${pct}%)<br>+${sessXP} XP · 🔥 ${S.streak}일 연속`+(rl.length?`<div class="rlist"><div><b>📅 다음 복습 일정</b></div>${rl.map(w=>`<div><span>${w.e} ${esc(w.w)}</span><span style="color:var(--sub)">${nextLabel(card(w))}</span></div>`).join("")}</div>`:"");
     $("rAgain").textContent="한 세트 더";$("rAgain").onclick=()=>mode==="custom"?buildSession("custom",lastCustom.filter(w=>W.includes(w))):buildSession(mode==="review"?"learn":mode);
     if(mode==="custom")$("rAgain").textContent="같은 리스트 한 번 더";
+    if(mode==="quiz"){$("rAgain").textContent=sessTag.yday?"한 번 더 풀기":"퀴즈 한 세트 더";$("rAgain").onclick=()=>sessTag.yday?buildSession("quiz",lastCustom,sessTag):buildSession("quiz",quizPick())}
   }
   show("result");
 }
-$("qx").onclick=()=>{$("fb").className="fb";if(mode==="test"&&!S.level){show("intro");return}renderHome()};
+$("qx").onclick=()=>{commit();$("fb").className="fb";if(mode==="test"&&!S.level){show("intro");return}renderHome()};
 $("rHome").onclick=renderHome;
 $("bLearn").onclick=()=>buildSession("learn");
+$("bQuiz").onclick=()=>buildSession("quiz",quizPick());
 $("bReview").onclick=()=>buildSession("review");
 $("bListen").onclick=()=>buildSession("listen");
 $("bStar").onclick=()=>buildSession("custom",starList());
@@ -702,7 +849,7 @@ function renderBook(){
   const list=bookList();shown=list;
   const LIM=200,vis=list.slice(0,LIM);
   $("bInfo").textContent=`${list.length}개`+(list.length>LIM?` (처음 ${LIM}개만 표시, 검색으로 찾아보세요)`:"")+(bf==="wrong"?" · 많이 틀린 순":"");
-  $("wl").innerHTML=vis.length?vis.map(w=>{const c=card(w);return `<div class="wi"><input type="checkbox" class="sel" data-sel="${w.id}" ${sel.has(w.id)?"checked":""}><span style="font-size:24px">${w.e}</span><div class="op" data-open="${w.id}"><b>${esc(w.w)}</b> <small>${esc(w.ko)} · ${CAT[w.c]} Lv.${w.lv}${c&&c.x?` · ❌${c.x}`:""}</small></div><span class="dots">${c?"●".repeat(c.box)+"○".repeat(5-c.box):"new"}</span><button class="stb" data-star="${w.id}">${S.star[w.id]?"⭐":"☆"}</button></div>`}).join(""):`<p class="muted" style="text-align:center;padding:40px 0">${bf==="star"?"☆를 눌러서 복습할 단어를 모아 보세요.":"아직 없어요."}</p>`;
+  $("wl").innerHTML=vis.length?vis.map(w=>{const c=card(w);return `<div class="wi"><input type="checkbox" class="sel" data-sel="${w.id}" ${sel.has(w.id)?"checked":""}><span style="font-size:24px">${w.e}</span><div class="op" data-open="${w.id}"><b>${esc(w.w)}</b> <small>${esc(w.ko)} · ${CAT[w.c]} Lv.${w.lv}${c&&c.x?` · ❌${c.x}`:""}${c?`<br>📅 ${nextLabel(c)}`:""}</small></div><span class="dots">${c?"●".repeat(c.box)+"○".repeat(5-c.box):"new"}</span><button class="stb" data-star="${w.id}">${S.star[w.id]?"⭐":"☆"}</button></div>`}).join(""):`<p class="muted" style="text-align:center;padding:40px 0">${bf==="star"?"☆를 눌러서 복습할 단어를 모아 보세요.":"아직 없어요."}</p>`;
   updSel();show("book");
 }
 function updSel(){$("selGo").disabled=!sel.size;$("selGo").textContent=sel.size?`선택한 ${sel.size}개 복습`:"선택한 것 복습";$("selAll").textContent=shown.length&&shown.slice(0,200).every(w=>sel.has(w.id))?"선택 해제":"전체 선택"}
@@ -724,7 +871,7 @@ function detailHTML(w,compact){
   const exs=[[w.s,w.sk],...w.m];
   const mine=(S.mine[w.id]||[]);
   let h=`<div class="emo">${w.e}</div><div class="dw">${esc(w.w)} <button class="mini" data-say="${esc(w.w)}">🔊</button> <button class="stb" data-star="${w.id}">${S.star[w.id]?"⭐":"☆"}</button></div>
-  <div class="dpos">${POS[w.pos]||""} · ${{av:"항공",gen:"단어",ex:"회화"}[w.c]} Lv.${w.lv}</div><div class="dko">${esc(w.ko)}</div>`;
+  <div class="dpos">${POS[w.pos]||""} · ${{av:"항공",gen:"단어",ex:"회화"}[w.c]} Lv.${w.lv}${card(w)?` · 📅 다음 복습: ${nextLabel(card(w))}`:""}</div><div class="dko">${esc(w.ko)}</div>`;
   if(w.x)h+=`<div class="box"><h4>💡 쉽게 이해하기</h4><p>${esc(w.x)}</p></div>`;
   h+=`<div class="box exbox"><h4>📝 예문</h4>${exs.map((e,i)=>exRow(e[0],e[1],i>0)).join("")}${exs.length>1?`<button class="mini moreEx">예문 더 보기 (+${exs.length-1})</button>`:""}</div>`;
   if(!compact)h+=`<div class="box spbox"><h4>🎤 따라 말하기</h4><p style="font-size:16px">${esc(w.s)}</p><div class="row2" style="margin-top:10px"><button class="mini" data-say="${esc(w.s)}">🔊 듣기</button><button class="mini spGo" data-sp="${w.id}">🎤 말하기</button></div><div class="mkmsg spMsg"></div></div>`;
