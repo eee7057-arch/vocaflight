@@ -130,6 +130,7 @@ body.tabs .selbar{bottom:calc(64px + env(safe-area-inset-bottom))}
 .path{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0 6px}
 .node{position:relative;width:74px;height:70px;border-radius:50%;border:none;font-size:30px;cursor:pointer;color:#fff;box-shadow:0 6px 0 #0003;display:flex;align-items:center;justify-content:center}
 .node:active{transform:translateY(3px);box-shadow:0 3px 0 #0003}
+.node img{filter:drop-shadow(0 2px 2px #0003)}.node.lock img{filter:grayscale(1) opacity(.7)}
 .node.done{background:#f59e0b}.node.open{background:var(--pri)}.node.skip{background:#7dd3fc}.node.lock{background:#cbd5e1;box-shadow:0 6px 0 #94a3b8;color:#64748b}
 .node.cp{width:86px;height:80px;font-size:34px}
 .node.cur{animation:pulse 1.6s infinite}
@@ -198,7 +199,7 @@ body.tabs .selbar{bottom:calc(64px + env(safe-area-inset-bottom))}
     <button class="btn sec" id="bListen">🎧 듣기 퀴즈</button>
     <button class="btn sec" id="bBook">📖 단어장</button>
   </div>
-  <p class="muted" style="margin-top:auto;padding-top:20px;text-align:center"><a href="#" id="bRetest" style="color:var(--sub)">레벨 테스트 다시 하기</a> · <a href="#" id="bBackup" style="color:var(--sub)">백업 / 복원</a><br><span style="font-size:11px">버전 6 · 단어 715개</span></p>
+  <p class="muted" style="margin-top:auto;padding-top:20px;text-align:center"><a href="#" id="bRetest" style="color:var(--sub)">레벨 테스트 다시 하기</a> · <a href="#" id="bBackup" style="color:var(--sub)">백업 / 복원</a><br><span style="font-size:11px">버전 7 · 단어 715개</span></p>
 </section>
 
 <!-- QUIZ -->
@@ -614,14 +615,19 @@ function renderHome(){
 $("course").onclick=e=>{const b=e.target.closest("button");if(!b)return;course=b.dataset.c;$("course").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));renderHome()};
 
 // ===== STAGE MAP (듀오링고식 스테이지) =====
-const STAGE_N=6,UNIT_S=5,NODES={};
-if(!S.path)S.path={};
-if(S.placeLv==null&&S.level)S.placeLv=S.level; // 건너뛰기는 레벨 테스트 결과 기준 (실력에 따라 오르는 레벨로 스테이지가 갑자기 넘어가지 않게)
+const STAGE_N=6,UNIT_S=5;let NODES={};
+if(S.placeLv==null&&S.level)S.placeLv=S.level;
 let mapC=S.mapC||"gen";
 const CNAME={gen:"📚 단어",ex:"💬 회화",av:"✈️ 항공"};
-function courseNodes(c){
-  if(NODES[c])return NODES[c];
-  const ws=W.filter(w=>w.c===c).sort((a,b)=>a.lv-b.lv||a.id-b.id);
+// 내 레벨 기준: 레벨 테스트 결과(placeLv) 이상인 단어만 스테이지로 보여 줌.
+// 단, 그러면 너무 적어질 때(코스의 절반 미만)만 한 단계씩 낮춰서 충분한 양을 확보.
+function cutoff(c){
+  const all=W.filter(w=>w.c===c);let L=Math.max(1,S.placeLv||1);
+  while(L>1&&all.filter(w=>w.lv>=L).length<Math.min(60,all.length/2))L--;
+  return L;
+}
+function buildNodes(c,L){
+  const ws=W.filter(w=>w.c===c&&w.lv>=L).sort((a,b)=>a.lv-b.lv||a.id-b.id);
   const stages=[];for(let i=0;i<ws.length;i+=STAGE_N)stages.push(ws.slice(i,i+STAGE_N));
   const nodes=[];let unit=0;
   for(let i=0;i<stages.length;i+=UNIT_S){
@@ -630,43 +636,48 @@ function courseNodes(c){
     nodes.push({unit,words:st.flat(),cp:true});
   }
   nodes.forEach((n,i)=>{n.i=i;n.c=c;n.lv=Math.max(...n.words.map(w=>w.lv))});
-  return NODES[c]=nodes;
+  return nodes;
 }
-const pdone=(c,i)=>(S.path[c]||{})[i]>0;
-const below=(c,i)=>courseNodes(c)[i].lv<(S.placeLv||1);
-function nodeState(c,i){
-  if(pdone(c,i))return "done";
-  if(i===0||pdone(c,i-1)||below(c,i-1)||below(c,i))return below(c,i)?"skip":"open";
-  return "lock";
+function courseNodes(c){const L=cutoff(c),k=c+L;return NODES[k]||(NODES[k]=buildNodes(c,L))}
+// 진행 기록은 단어 기준으로 저장 (스테이지 구성이 바뀌어도 기록이 안 날아가게)
+if(!S.ws){
+  S.ws={};S.wcp={};
+  for(const c in (S.path||{}))for(const i in S.path[c]){const n=buildNodes(c,1)[+i];if(!n||!(S.path[c][i]>0))continue;const m=n.cp?S.wcp:S.ws;n.words.forEach(w=>m[w.id]=Math.max(m[w.id]||0,S.path[c][i]))}
+  save();
 }
-function curNode(c){const N=courseNodes(c);let i=N.findIndex((n,k)=>!pdone(c,k)&&!below(c,k));if(i<0)i=N.findIndex((n,k)=>!pdone(c,k));return i}
+function nodeStars(n){const m=n.cp?S.wcp:S.ws;let s=9;for(const w of n.words){const v=m[w.id];if(!v)return 0;s=Math.min(s,v)}return s}
+const pdone=(c,i)=>nodeStars(courseNodes(c)[i])>0;
+function nodeState(c,i){if(pdone(c,i))return "done";if(i===0||pdone(c,i-1))return "open";return "lock"}
+function curNode(c){const N=courseNodes(c);const i=N.findIndex((n,k)=>!pdone(c,k));return i}
+const IMG=n=>`<img src="img/${n}.png" alt="" style="width:46px;height:46px;pointer-events:none">`;
 function renderMap(){
   $("mStreak").textContent="🔥 "+S.streak;$("mXP").textContent="⭐ "+S.xp;$("mLv").textContent="Lv."+(S.level||1);
   fillY($("yBoxM"));
   $("mapCourse").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.c===mapC));
-  const N=courseNodes(mapC),cur=curNode(mapC);
-  let h="",k=0;
+  const N=courseNodes(mapC),cur=curNode(mapC),L=cutoff(mapC);
+  let h=`<p class="muted" style="font-size:13px;text-align:center;margin:4px 0 -6px">📍 내 레벨(Lv.${S.placeLv||1}) 기준 · Lv.${L} 이상만 표시 · <a href="#" id="mRetest" style="color:var(--sub)">레벨 테스트 다시</a></p>`,k=0;
   const units=[...new Set(N.map(n=>n.unit))];
   units.forEach(u=>{
     const un=N.filter(n=>n.unit===u),lv=[...new Set(un.flatMap(n=>n.words.map(w=>w.lv)))].sort(),done=un.filter(n=>pdone(mapC,n.i)).length;
     h+=`<div class="unit u${(u-1)%5}"><div><b>유닛 ${u}</b><span>${CNAME[mapC]} · Lv.${lv[0]}${lv.length>1?"~"+lv[lv.length-1]:""} · ${un[un.length-1].words.length}개</span></div><small>${done}/${un.length}</small></div><div class="path">`;
     un.forEach(n=>{
-      const st=nodeState(mapC,n.i),stars=(S.path[mapC]||{})[n.i]||0,x=Math.round(Math.sin(k++*0.85)*70);
-      const icon=n.cp?"🏆":st==="done"?"✓":st==="lock"?"🔒":st==="skip"?"⏭":"★";
-      h+=`<button class="node ${st}${n.cp?" cp":""}${n.i===cur?" cur":""}" data-node="${n.i}" style="transform:translateX(${x}px)">${n.i===cur?`<span class="tip">${pdone(mapC,n.i)?"다시":"시작!"}</span>`:""}${icon}${st==="done"&&!n.cp?`<span class="st">${"⭐".repeat(stars)}</span>`:""}</button>`;
+      const st=nodeState(mapC,n.i),stars=nodeStars(n),x=Math.round(Math.sin(k++*0.85)*70);
+      const icon=n.cp?(st==="done"?IMG("crown"):IMG("trophy")):st==="done"?IMG("gstar"):st==="lock"?IMG("lock"):IMG("star");
+      h+=`<button class="node ${st}${n.cp?" cp":""}${n.i===cur?" cur":""}" data-node="${n.i}" style="transform:translateX(${x}px)">${n.i===cur?`<span class="tip">시작!</span>`:""}${icon}${st==="done"&&!n.cp?`<span class="st">${"⭐".repeat(stars)}</span>`:""}</button>`;
     });
     h+=`</div>`;
   });
   $("mapBody").innerHTML=h;
+  $("mRetest").onclick=e=>{e.preventDefault();S.recent=[];buildSession("test")};
   show("map");
   const c=document.querySelector(".node.cur");if(c)setTimeout(()=>c.scrollIntoView({block:"center"}),30);
 }
 function closePop(){$("pop").classList.remove("on");$("dim").classList.remove("on")}
 function openNode(i){
-  const n=courseNodes(mapC)[i],st=nodeState(mapC,i),stars=(S.path[mapC]||{})[i]||0;
+  const n=courseNodes(mapC)[i],st=nodeState(mapC,i),stars=nodeStars(n);
   const newN=n.words.filter(w=>!card(w)).length;
   let h=n.cp?`<h3>🏆 유닛 ${n.unit} 체크포인트</h3><p>유닛 ${n.unit} 전체에서 10문제. 70% 이상 맞히면 통과해서 다음 유닛이 열려요.</p>`
-    :`<h3>스테이지 ${n.num}${stars?" "+"⭐".repeat(stars):""}</h3><p>${newN?`새 ${mapC==="ex"?"표현":"단어"} ${newN}개`:"모두 배운 것"} · 약 ${n.words.length*2+newN}문제${st==="skip"?"<br>⏭ 레벨보다 쉬운 스테이지라 건너뛰어도 돼요.":""}</p>`;
+    :`<h3>스테이지 ${n.num}${stars?" "+"⭐".repeat(stars):""}</h3><p>${newN?`새 ${mapC==="ex"?"표현":"단어"} ${newN}개`:"모두 배운 것"} · 약 ${n.words.length*2+newN}문제</p>`;
   if(!n.cp)h+=`<div class="wchips">${n.words.map(w=>`<span>${w.e} ${esc(w.w)}</span>`).join("")}</div>`;
   h+=st==="lock"?`<button class="btn sec" disabled>🔒 앞 스테이지를 먼저 깨야 열려요</button>`:`<button class="btn pri" id="popGo">${pdone(mapC,i)?"다시 하기":"시작하기"}</button>`;
   $("popIn").innerHTML=h;$("pop").classList.add("on");$("dim").classList.add("on");
@@ -919,7 +930,7 @@ function finish(){
   if(mode==="test"){
     // level = highest level where you got at least one of its words right, counting up while not 0
     let lv=1;for(let l=1;l<=5;l++){const g=S.recent.filter(x=>x.lv===l);if(g.some(x=>x.ok))lv=l;else break}
-    S.level=lv;S.placeLv=lv;S.recent=[];save();
+    S.level=lv;S.placeLv=lv;S.recent=[];NODES={};save();
     $("rEmoji").textContent="🛫";$("rTitle").textContent="당신의 레벨: Lv."+lv;
     $("rTxt").textContent="10문제 중 "+right+"개 정답. 이 레벨부터 시작하고, 실력에 맞춰 자동으로 올라가거나 내려가요.";
     $("rAgain").textContent="🗺️ 스테이지 시작";$("rAgain").onclick=renderMap;
@@ -939,13 +950,12 @@ function finish(){
     if(mode==="stage"){
       const n=sessTag.node,acc=fa?fc/fa:1,c=n.c;
       const stars=acc>=.9?3:acc>=.7?2:1,pass=!n.cp||acc>=.7;
-      S.path=S.path||{};S.path[c]=S.path[c]||{};
-      if(pass){S.path[c][n.i]=Math.max(S.path[c][n.i]||0,stars);S.xp+=n.cp?30:15;sessXP+=n.cp?30:15;save()}
+      if(pass){const mp=n.cp?(S.wcp=S.wcp||{}):(S.ws=S.ws||{});n.words.forEach(w=>mp[w.id]=Math.max(mp[w.id]||0,stars));S.xp+=n.cp?30:15;sessXP+=n.cp?30:15;save()}
       $("rEmoji").textContent=pass?(n.cp?"🏆":"⭐".repeat(stars)):"💪";
       $("rTitle").textContent=pass?(n.cp?`유닛 ${n.unit} 통과!`:`스테이지 ${n.num} 클리어!`):"아깝다! 다시 도전";
       $("rTxt").innerHTML=`첫 시도 정답률 ${Math.round(acc*100)}%${pass?` · 보너스 +${n.cp?30:15} XP`:" (70% 이상 필요)"}<br>`+$("rTxt").innerHTML;
-      const nx=courseNodes(c)[n.i+1];
-      if(!pass){$("rAgain").textContent="다시 도전";$("rAgain").onclick=()=>startNode(c,n.i)}
+      const nx=courseNodes(c)[courseNodes(c).findIndex(x=>x.words[0]===n.words[0]&&x.cp===n.cp)+1];
+      if(!pass){$("rAgain").textContent="다시 도전";$("rAgain").onclick=()=>buildSession("stage",null,{node:n})}
       else if(nx){$("rAgain").textContent=nx.cp?"🏆 체크포인트 도전 ▶":`스테이지 ${nx.num} ▶`;$("rAgain").onclick=()=>startNode(c,nx.i)}
       else{$("rAgain").textContent="🎉 코스 완주! 지도로";$("rAgain").onclick=renderMap}
       $("rHome").textContent="🗺️ 지도로";
@@ -1081,7 +1091,7 @@ function openBackup(){
   $("bkGo").onclick=()=>{
     let d;try{d=JSON.parse(decodeURIComponent(escape(atob($("bkIn").value.trim()))));if(!d||!d.cards)throw 0}catch(e){$("bkMsg").style.color="var(--bad)";$("bkMsg").textContent="올바른 백업 코드가 아니에요.";return}
     if(!armed){armed=true;$("bkMsg").style.color="var(--bad)";$("bkMsg").textContent="지금 기록이 덮어써져요. 한 번 더 누르면 복원돼요.";$("bkGo").textContent="정말 복원하기";return}
-    S=Object.assign({mine:{},star:{},recent:[],path:{},log:{},yDone:{}},d);save();$("bkMsg").style.color="var(--ok)";$("bkMsg").textContent="복원 완료! ✅";$("bkGo").style.display="none";
+    S=Object.assign({mine:{},star:{},recent:[],path:{},log:{},yDone:{},ws:{},wcp:{}},d);NODES={};save();$("bkMsg").style.color="var(--ok)";$("bkMsg").textContent="복원 완료! ✅";$("bkGo").style.display="none";
   };
 }
 $("bBackup").onclick=e=>{e.preventDefault();openBackup()};
